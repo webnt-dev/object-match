@@ -189,6 +189,18 @@ objectMatch(
 ) === true;
 ```
 
+### `$hasKey`
+source object has key
+```TypeScript
+objectMatch(
+  {
+    a: { x1: 1, x2: 2 },
+  },
+  {
+    a: { $hasKey: 'x1' },
+  },
+) === true;
+```
 
 ## Logincal functions
 ### `$not`
@@ -288,6 +300,11 @@ objectMatch(
 
     A: 4, // $none compare
 
+    B: ['1', '2', 3, 7], // $hasKey compare
+    C: {
+      C1: 'f',
+    },
+
   },
   {
     a: 5, // Properties compare
@@ -327,6 +344,13 @@ objectMatch(
     z: { $or: [{ $gt: 3 }, { $lt: 4 }] }, // $or compare
 
     A: { $none: [{ $gt: 4 }, { $lt: 4 }] }, // $none compare
+
+    $hasKey: 'B', // $hasKey compare
+    $not: { $hasKey: 'D' },
+    C: {
+      $hasKey: 'C1',
+      $not: { $hasKey: 'C2' },
+    },
 
   },
 ) === true

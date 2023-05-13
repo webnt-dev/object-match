@@ -74,7 +74,7 @@ function compareValues(source, target) {
         case 'string':
             result = stringCompare(source, target);
             break;
-        default: throw new Error(`Unsuported type ${targetType}`);
+        default: throw new Error(`compareValues: Unsuported type ${targetType}`);
     }
     return result;
 }
@@ -138,7 +138,7 @@ function scalarIntersection(value, template) {
             case 'boolean':
                 result = booleanIntersection(value, template);
                 break;
-            default: throw new Error(`Unsuported type ${templateType}`);
+            default: throw new Error(`scalarIntersection: Unsuported type ${templateType}`);
         }
     }
     return result;
@@ -171,11 +171,10 @@ function valueIntersection(value, template) {
         result = arrayIntersection(value, template);
     }
     else { // object template
-        result = objectTemplateIntersection(value, template);
+        result = objectTemplate2any(value, template);
     }
     // debugger;
     return result;
-    // throw new Error(`Unsuported type ${templateType}`);
 }
 /** *************
 * pattern functions
@@ -195,27 +194,13 @@ function $not(value, template) {
 // value in template
 function $in(value, template) {
     if (!Array.isArray(template)) {
-        throw new Error(`$in expects array, ${template} given`);
+        throw new Error(`$in: expects array, ${template} given`);
     }
     const found = template.find((_, index) => valueIntersection(value, template[index]));
     return found !== undefined ? template : undefined;
 }
 // number of keys in object, number of items in array
 function $size(value, template) {
-    // if (!isNumber(template)) {
-    // 	throw new Error('$size parameter must be number');
-    // }
-    // if (Array.isArray(value)) {
-    // 	if (value.length === template) {
-    // 		return template;
-    // 	}
-    // } else if (isJSONObject(value)) {
-    // 	if (Object.keys(value).length === template) {
-    // 		return template;
-    // 	}
-    // } else {
-    // 	throw new Error('$size is applicable only for array and objects');
-    // }
     let size;
     if (Array.isArray(value)) {
         size = value.length;
@@ -232,7 +217,7 @@ function $size(value, template) {
 // template in value
 function $contains(value, template) {
     if (!Array.isArray(value)) {
-        throw new Error(`$contains expects array, ${value} given`);
+        throw new Error(`$contains: expects array, ${value} given`);
     }
     const found = value.find((_, index) => valueIntersection(value[index], template));
     return found !== undefined ? template : undefined;
@@ -240,24 +225,15 @@ function $contains(value, template) {
 // arrays intersection
 function $intersection(value, template) {
     if (!Array.isArray(template) || !Array.isArray(value)) {
-        throw new Error(`$in expects array, ${template} , ${value} given`);
+        throw new Error(`$intersection: expects array, ${template} , ${value} given`);
     }
     const found = value.find((_, indexV) => template.find((__, index) => valueIntersection(value[indexV], template[index])));
     return found !== undefined ? template : undefined;
 }
-// length arrays intersection - exact matching, no pattern matching
-// function $intersectionSize(value: JSONData, template: JSONData): Optional<JSONData> {
-// 	if (!Array.isArray(template) || !Array.isArray(value)) {
-// 		throw new Error(`$in expects array, ${template} , ${value} given`);
-// 	}
-// 	const found = value.map((_, indexV) => template.map((__, index) => compareValues(value[indexV], template[index])));
-// 	console.log(found);
-// 	return found !== undefined ? template : undefined;
-// }
 // value is subset on template
 function $subsetOf(value, template) {
     if (!Array.isArray(template) || !Array.isArray(value)) {
-        throw new Error(`$in expects array, ${template} , ${value} given`);
+        throw new Error(`$subsetOf: expects array, ${template} , ${value} given`);
     }
     const found = value.every((_, indexV) => template.find((__, index) => valueIntersection(value[indexV], template[index])));
     return found ? template : undefined;
@@ -265,9 +241,8 @@ function $subsetOf(value, template) {
 // template is subset on value
 function $supersetOf(value, template) {
     if (!Array.isArray(template) || !Array.isArray(value)) {
-        throw new Error(`$in expects array, ${template} , ${value} given`);
+        throw new Error(`$supersetOf: expects array, ${template} , ${value} given`);
     }
-    // const found = template.every((_, indexV) => value.find((__, index) => valueIntersection(value[index], template[indexV])));
     const found = template.every((_, indexV) => {
         const resultT = value.find((__, index) => {
             const resultV = valueIntersection(value[index], template[indexV]);
@@ -332,7 +307,7 @@ function $lte(value, template) {
 // all items in template applies to value
 function $and(value, template) {
     if (!Array.isArray(template)) {
-        throw new Error(`$and template must be array, ${template} given`);
+        throw new Error(`$and: template must be array, ${template} given`);
     }
     const result = template.every((_, index) => valueIntersection(value, template[index]));
     return result ? template : undefined;
@@ -340,7 +315,7 @@ function $and(value, template) {
 // at least one items in template applies to value
 function $or(value, template) {
     if (!Array.isArray(template)) {
-        throw new Error(`$and template must be array, ${template} given`);
+        throw new Error(`$or: template must be array, ${template} given`);
     }
     const result = template.find((_, index) => valueIntersection(value, template[index]));
     return result ? template : undefined;
@@ -348,10 +323,19 @@ function $or(value, template) {
 // not any items in template applies to value
 function $none(value, template) {
     if (!Array.isArray(template)) {
-        throw new Error(`$and template must be array, ${template} given`);
+        throw new Error(`$none: template must be array, ${template} given`);
     }
     const result = template.find((_, index) => valueIntersection(value, template[index]));
     return result ? undefined : template;
+}
+function $hasKey(value, template) {
+    if (typeof template !== 'string') {
+        throw new Error('$hasKey: template must be string');
+    }
+    if (isJSONObject(value)) {
+        return Object.hasOwn(value, template) ? template : undefined;
+    }
+    return undefined;
 }
 patternFunctions.$eq = $eq; // any, any
 patternFunctions.$neq = $not; // any, any
@@ -371,102 +355,95 @@ patternFunctions.$lte = $lte; // string | number , string | number
 patternFunctions.$and = $and; // any , array
 patternFunctions.$or = $or; // any , array
 patternFunctions.$none = $none; // any , array
+patternFunctions.$hasKey = $hasKey; // object , string
 function patternIntersection(key, value, template) {
     let result;
-    if (key === '$exists') { // placeholder for $exists
-        result = (value === undefined) && (template === true);
-    }
-    else if (value === undefined) {
-        throw new Error(`Value cannot be undefined here for key: ${key}`); // this should never happen
+    if (value === undefined) {
+        throw new Error(`patternIntersection: Value cannot be undefined here for key: ${key}`); // this should never happen
     }
     else if (Object.hasOwn(patternFunctions, key)) {
         result = patternFunctions[key].call(null, value, template);
     }
     else {
-        throw new Error(`Unsupported matching pattern ${key}`);
+        throw new Error(`patternIntersection: Unsupported matching pattern ${key}`);
     }
-    /* * /
-    if (key === '$eq') key = '$is';
-    else if (key === '$neq') key = '$not';
-
-    switch (key) {
-        case '$in': result = $in(value, template); break;
-        case '$is': result = $eq(value, template); break;
-        case '$not': result = $not(value, template); break;
-        default: throw new Error(`Unsupported matching pattern ${key}`);
-    }
-    /* */
     return result;
 }
-function objectTemplateIntersection(source, template) {
+function objectTemplate2Scalar(source, template) {
+    // all template keys must be functions and they must all match against source
+    if (!isJSONObject(template)) {
+        throw new Error('objectTemplate2Scalar: template must be object');
+    }
+    const templateKeys = Object.keys(template);
+    const areMatching = templateKeys.every((key) => {
+        if (!supportedType(template[key])) {
+            throw new Error(`objectTemplate2Scalar: unsupported value (type) in template ${template[key]}`);
+        }
+        if (key.startsWith('$')) {
+            const match = patternIntersection(key, source, template[key]);
+            return match !== undefined;
+        }
+        return false;
+    });
+    return areMatching ? template : undefined;
+}
+function objectTemplate2Object(source, template) {
+    if (!isJSONObject(template)) {
+        throw new Error('objectTemplate2Object: template must be object');
+    }
+    const templateKeys = Object.keys(template);
+    const areMatching = templateKeys.every((key) => {
+        if (!supportedType(template[key])) {
+            throw new Error(`objectTemplate2Object: unsupported value (type) in template ${template[key]}`);
+        }
+        if (Object.hasOwn(source, key)) {
+            const match = valueIntersection(source[key], template[key]);
+            return match !== undefined;
+        }
+        if (key.startsWith('$')) {
+            const match = patternIntersection(key, source, template[key]);
+            return match !== undefined;
+        }
+        return false;
+    });
+    return areMatching ? template : undefined;
+}
+function objectTemplate2Array(source, template) {
+    if (!isJSONObject(template)) {
+        throw new Error('objectTemplate2Array: template must be object');
+    }
+    const templateKeys = Object.keys(template);
+    const areMatching = templateKeys.every((key) => {
+        if (!supportedType(template[key])) {
+            throw new Error(`objectTemplate2Array: unsupported value (type) in template ${template[key]}`);
+        }
+        if (key.startsWith('$')) {
+            const match = patternIntersection(key, source, template[key]);
+            return match !== undefined;
+        }
+        return false;
+    });
+    return areMatching ? template : undefined;
+}
+function objectTemplate2any(source, template) {
     // debugger;
     if ((typeof template !== 'object') ||
         (template === null) ||
         (Array.isArray(template)) ||
         false) {
-        throw new Error('Source and template must be non-null, non-array objects');
+        throw new Error('objectTemplate2any: template must be non-null, non-array objects');
     }
-    let result = {};
-    const templateKeys = Object.keys(template);
-    // source && template are objects
-    if (isJSONObject(source)) {
-        const allMatch = templateKeys.every((key) => {
-            if (!supportedType(template[key])) {
-                throw new Error(`Unsupported value (type) in template ${template[key]}`);
-            }
-            if (Object.hasOwn(source, key)) {
-                if (!supportedType(source[key])) {
-                    throw new Error(`Unsupported value (type) in source ${source[key]}`);
-                }
-                const match = valueIntersection(source[key], template[key]);
-                if (match !== undefined) {
-                    result[key] = match;
-                    return true;
-                }
-            }
-            else if (key.startsWith('$')) {
-                // let match;
-                // ugly $size hack?? we must match object size agains whole object
-                // if (['$size', '$eq', '$not', '$is', '$neq'].includes(key)) {
-                // 	match = patternIntersection(key, source, template[key]);
-                // } else {
-                // 	match = patternIntersection(key, source[key], template[key]);
-                // }
-                const match = patternIntersection(key, source, template[key]) || patternIntersection(key, source[key], template[key]);
-                if (match !== undefined) {
-                    result[key] = match;
-                    return true;
-                }
-            } /* else {
-                const match = valueIntersection(undefined, template[key]);
-
-                if (match !== undefined) {
-                    result[key] = match;
-                    return true;
-                }
-            } */
-            return false;
-        });
-        if (!allMatch) {
-            result = {};
-        }
+    let result;
+    if (isScalar(source)) {
+        result = objectTemplate2Scalar(source, template);
     }
-    else { // source is scalar && template is object - all template keys must be patterns and all must match
-        const areMatching = templateKeys.every((key) => {
-            if (key.startsWith('$')) {
-                const match = patternIntersection(key, source, template[key]);
-                if (match !== undefined) {
-                    result[key] = template[key];
-                    return true;
-                }
-            }
-            return false;
-        });
-        if (!areMatching) {
-            result = {};
-        }
+    else if (isJSONObject(source)) {
+        result = objectTemplate2Object(source, template);
     }
-    return Object.keys(result).length > 0 ? result : undefined;
+    else if (Array.isArray(source)) {
+        result = objectTemplate2Array(source, template);
+    }
+    return result;
 }
 function objectIntersection(source, template) {
     // debugger;
@@ -477,9 +454,9 @@ function objectIntersection(source, template) {
         (Array.isArray(source)) ||
         (Array.isArray(template)) ||
         false) {
-        throw new Error('Source and template must be non-null, non-array objects');
+        throw new Error('objectIntersection: source and template must be non-null, non-array objects');
     }
-    const result = objectTemplateIntersection(source, template);
+    const result = objectTemplate2any(source, template);
     return result === undefined ? null : result;
 }
 /**

@@ -208,18 +208,26 @@ const tests = [
 		),
 	},
 
-	// {
-	// 	caption: '$exists',
-	// 	result: objectMatch(
-	// 		{
-	// 			// a: ['1', '2', 3, 7],
-	// 		},
-	// 		{
-	// 			// a: { $exists: true },
-	// 			b: { $exists: false },
-	// 		},
-	// 	),
-	// },
+	{
+		caption: '$hasKey',
+		result: objectMatch(
+			{
+				B: ['1', '2', 3, 7],
+				C: {
+					C1: 'f',
+				},
+			},
+			{
+				// a: { $exists: true },
+				$hasKey: 'B',
+				$not: { $hasKey: 'D' },
+				C: {
+					$hasKey: 'C1',
+					$not: { $hasKey: 'C2' },
+				},
+			},
+		),
+	},
 
 	{
 		caption: '$odd',
@@ -278,6 +286,10 @@ const tests = [
 
 				A: 4, // $none compare
 
+				B: ['1', '2', 3, 7], // $hasKey compare
+				C: {
+					C1: 'f',
+				},
 			},
 			{
 				a: 5, // Properties compare
@@ -318,11 +330,40 @@ const tests = [
 
 				A: { $none: [{ $gt: 4 }, { $lt: 4 }] }, // $none compare
 
+				$hasKey: 'B', // $hasKey compare
+				$not: { $hasKey: 'D' },
+				C: {
+					$hasKey: 'C1',
+					$not: { $hasKey: 'C2' },
+				},
+
 			},
 		),
 	},
 
 ] as any[];
+
+/*
+		caption: '$hasKey',
+		result: objectMatch(
+			{
+				B: ['1', '2', 3, 7],
+				C: {
+					C1: 'f',
+				},
+			},
+			{
+				// a: { $exists: true },
+				$hasKey: 'B',
+				$not: { $hasKey: 'D' },
+				C: {
+					$hasKey: 'C1',
+					$not: { $hasKey: 'C2' },
+				},
+			},
+		),
+	},
+*/
 
 const ok: any[] = [];
 const nok: any[] = [];
