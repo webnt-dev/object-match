@@ -1,6 +1,6 @@
 {
   "name": "@webnt-dev/object-match",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Object matching - match object agains template with advanced comparison capability",
   "main": "build/index.mjs",
   "types": "build/index.d.mts",
@@ -34,5 +34,5 @@
     "type": "git",
     "url": "git+https://github.com/webnt-dev/object-match.git"
   },
-	"homepage": "https://github.com/webnt-dev/object-match"
+  "homepage": "https://github.com/webnt-dev/object-match"
 }
