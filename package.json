@@ -5,7 +5,7 @@
   "main": "build/index.mjs",
   "types": "build/index.d.mts",
   "files": [
-    "src"
+    "src"https://github.com/webnt-dev/object-match
   ],
   "type": "module",
   "scripts": {
@@ -29,5 +29,10 @@
     "eslint-plugin-import": "^2.27.5",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/webnt-dev/object-match.git"
+  },
+	"homepage": "https://github.com/webnt-dev/object-match"
 }
