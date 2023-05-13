@@ -390,4 +390,7 @@ objectMatch(
 ) === true;
 ```
 
+Package exports `valueIntersection` function that can be used run reccursive matching of 2 values of any types
+if additional template matching functions needs to traverse complex structures.
+
 # Changelog
