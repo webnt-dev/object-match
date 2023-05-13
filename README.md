@@ -394,3 +394,8 @@ Package exports `valueIntersection` function that can be used run reccursive mat
 if additional template matching functions needs to traverse complex structures.
 
 # Changelog
+## version 1.0.4
+2023-05-13
+```
++ initial version
+```
