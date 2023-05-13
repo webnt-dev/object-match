@@ -1,22 +1,41 @@
 /**
- * @todo $eq for object = there must be the same keys.... not jut regular pattern matching
+ * @todo add $exists
+ * @todo rewrite objectTemplateIntersection - too complex
  */
 
-/*
-type JSONString = string;
-type JSONNumber = number;
-type JSONBoolean = boolean;
-type JSONNull = null;
-*/
+/**
+ * Type represents JSON valid scalar variable
+ */
 type JSONScalar = string | number | boolean | null;
+
+/**
+ * Type represents JSON valid object
+ */
 type JSONObject = { [property: string]: JSONData };
+
+/**
+ * Type represents any JSON valid value
+ */
 type JSONData = JSONScalar | JSONArray | JSONObject;
+
+/**
+ * Type represents JSON valid array
+ */
 type JSONArray = JSONData[];
 
+/**
+ * Type represents JSON valid value or undefined, generic type
+ */
 type Optional<T> = T | undefined;
 
+/**
+ * Type represents template matching function type
+ */
 type PatternMatchingFunction = (value: JSONData, template: JSONData) => Optional<JSONData>;
 
+/**
+ * Dictionary of all templete matching functions
+ */
 const patternFunctions: Record<string, PatternMatchingFunction> = {};
 
 function supportedType(value: any): boolean {
@@ -95,7 +114,14 @@ function compareValues(source: JSONData, target: JSONData): boolean {
 	return result;
 }
 
-
+/**
+ * Function matches two objects, if those are the same.
+ * Function does not do pattern matching, but exact comparison
+ *
+ * @param {JSONObject|null} source - object to test
+ * @param {JSONObject|null} target - object to test agains
+ * @returns { boolean } true if value is the same as target
+ */
 function objectCompare(source: JSONObject | null, target: JSONObject | null): boolean {
 	let result = false;
 	if (target === null) {
@@ -162,7 +188,16 @@ function arrayIntersection(value: JSONData, template: JSONData): Optional<JSONDa
 	return result ? template : undefined;
 }
 
-
+/**
+ * Function provides recursive pattern matching.
+ * If template is scalar, function just compares values
+ * If template is array, function traverse the array and tries to apply all items as patterns to value
+ * If template is object, function traverse the object and tries to apply all properties as patterns to value
+ *
+ * @param {JSONObject} source - object to test
+ * @param {JSONObject} template - pattern to test agains
+ * @returns { boolean } true if value matches template
+ */
 function valueIntersection(value: JSONData, template: JSONData): Optional<JSONData> {
 	let result;
 
@@ -279,10 +314,19 @@ function $subsetOf(value: JSONData, template: JSONData): Optional<JSONData> {
 
 // template is subset on value
 function $supersetOf(value: JSONData, template: JSONData): Optional<JSONData> {
+
 	if (!Array.isArray(template) || !Array.isArray(value)) {
 		throw new Error(`$in expects array, ${template} , ${value} given`);
 	}
-	const found = template.every((_, indexV) => value.find((__, index) => valueIntersection(value[index], template[indexV])));
+
+	// const found = template.every((_, indexV) => value.find((__, index) => valueIntersection(value[index], template[indexV])));
+	const found = template.every((_, indexV) => {
+		const resultT = value.find((__, index) => {
+			const resultV = valueIntersection(value[index], template[indexV]);
+			return resultV !== undefined;
+		});
+		return resultT !== undefined;
+	});
 	return found ? template : undefined;
 }
 
@@ -423,6 +467,7 @@ function patternIntersection(key: string, value: Optional<JSONData>, template: J
 
 function objectTemplateIntersection(source: JSONData, template: JSONData): Optional<JSONObject> {
 
+	// debugger;
 	if (
 		(typeof template !== 'object') ||
 		(template === null) ||
@@ -437,7 +482,7 @@ function objectTemplateIntersection(source: JSONData, template: JSONData): Optio
 
 	// source && template are objects
 	if (isJSONObject(source)) {
-		templateKeys.forEach((key: string) => {
+		const allMatch = templateKeys.every((key: string) => {
 			if (!supportedType(template[key])) {
 				throw new Error(`Unsupported value (type) in template ${template[key]}`);
 			}
@@ -449,29 +494,47 @@ function objectTemplateIntersection(source: JSONData, template: JSONData): Optio
 				const match = valueIntersection(source[key], template[key]);
 				if (match !== undefined) {
 					result[key] = match;
+					return true;
 				}
 			}	else if (key.startsWith('$')) {
 
-				let match;
+				// let match;
 				// ugly $size hack?? we must match object size agains whole object
-				if (key === '$size') {
-					match = patternIntersection(key, source, template[key]);
-				} else {
-					match = patternIntersection(key, source[key], template[key]);
-				}
+				// if (['$size', '$eq', '$not', '$is', '$neq'].includes(key)) {
+				// 	match = patternIntersection(key, source, template[key]);
+				// } else {
+				// 	match = patternIntersection(key, source[key], template[key]);
+				// }
+
+				const match = patternIntersection(key, source, template[key]) || patternIntersection(key, source[key], template[key]);
 
 				if (match !== undefined) {
 					result[key] = match;
+					return true;
 				}
-			}
+			} /* else {
+				const match = valueIntersection(undefined, template[key]);
+
+				if (match !== undefined) {
+					result[key] = match;
+					return true;
+				}
+			} */
+
+			return false;
 		});
+		if (!allMatch) {
+			result = {};
+		}
 	} else { // source is scalar && template is object - all template keys must be patterns and all must match
 
 		const areMatching = templateKeys.every((key: string) => {
-			const match = patternIntersection(key, source, template[key]);
-			if (match !== undefined) {
-				result[key] = template[key];
-				return true;
+			if (key.startsWith('$')) {
+				const match = patternIntersection(key, source, template[key]);
+				if (match !== undefined) {
+					result[key] = template[key];
+					return true;
+				}
 			}
 			return false;
 		});
@@ -502,14 +565,21 @@ function objectIntersection(source: JSONData, template: JSONData): JSONObject | 
 
 }
 
-
+/**
+ * Main function for object matching
+ *
+ * @param {JSONObject} source - object to test
+ * @param {JSONObject} template - pattern to test agains
+ * @returns { boolean } true if value matches template
+ */
 function objectMatch(source: JSONObject, template: JSONObject): boolean {
+	// debugger;
 	return objectIntersection(source, template) !== null;
 }
 
 export {
-	JSONScalar, JSONObject, JSONData, JSONArray,
-	objectIntersection, objectMatch,
+	JSONScalar, JSONObject, JSONData, JSONArray, Optional, PatternMatchingFunction,
+	objectIntersection, objectMatch, valueIntersection,
 	objectCompare,
 
 	patternFunctions,

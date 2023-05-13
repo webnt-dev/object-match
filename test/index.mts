@@ -1,892 +1,329 @@
 import {
-	objectIntersection,
-	objectCompare,
+	// objectIntersection,
+	// objectCompare,
+	patternFunctions,
+	objectMatch,
+	JSONData,
+	Optional,
 } from '../build/index.mjs';
 
-/*
-console.log(objectIntersection(
-	{ a: 5 },
-	{ a: 5 },
-));
-*/
-// console.log(compareObjects(objectIntersection(
-// 	{ a: 5 },
-// 	{ a: 5 },
-// ), { a: 5 }));
 
-// "test": "tsc --project ./tsconfig.json && ts-node-esm ./test/index.mts"
+patternFunctions.$odd = (value: JSONData, template: JSONData): Optional<JSONData> => {
+	if (typeof template !== 'boolean') {
+		throw Error('$odd template must be boolean');
+	}
+	if (typeof value !== 'number') {
+		return undefined;
+	}
+
+	return (value % 2 === 1) === template ? template : undefined;
+};
 
 const tests = [
-	/* * /
-	{
-		caption: 'One property compare',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-					b: 'X',
-					c: null,
-					d: false,
-				},
-				{
-					a: 5,
-				},
-			), {
-				a: 5,
-			},
-		) === true,
-	},
-	/* */
 
-	/* * /
 	{
-		caption: 'multiple properties compare',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-					b: 'X',
-					c: null,
-					d: false,
-				},
-				{
-					a: 5,
-					b: 'X',
-					c: null,
-					d: false,
-				},
-			), {
+		caption: 'Properties compare',
+		result: objectMatch(
+			{
 				a: 5,
 				b: 'X',
-				c: null,
-				d: false,
+				c: false,
+				d: ['1', { e1: 'test' }],
 			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: 'ignored property in source compare',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-					b: 'X',
-					c: null,
-					d: false,
-				},
-				{
-					a: 5,
-					b: 'X',
-					d: false,
-				},
-			), {
+			{
 				a: 5,
+			},
+		),
+	},
+	{
+		caption: '$eq/$is compare',
+		result: objectMatch(
+			{
+				e: { e1: 4 },
+				f: 5,
+			},
+			{
+				e: { $eq: { e1: 4 } },
+				f: { $is: 5 },
+			},
+		),
+	},
+	{
+		caption: '$neq/$not compare',
+		result: objectMatch(
+			{
+				g: { g1: 4 },
+				h: 5,
+			},
+			{
+				g: { $neq: { g1: 5 } },
+				h: { $not: 4 },
+			},
+		),
+	},
+	{
+		caption: '$gt/$gte/$lt/$lte compare',
+		result: objectMatch(
+			{
+				i: { i1: 4 },
+				j: 5,
+				k: 5,
+				l: 5,
+			},
+			{
+				i: { i1: { $gt: 3 } },
+				j: { $gte: 5 },
+				k: { $lt: 6 },
+				l: { $not: { $lte: 4 } },
+			},
+		),
+	},
+
+	{
+		caption: '$in compare',
+		result: objectMatch(
+			{
+				m: 1,
+				n: [1],
+				o: { o1: 1 },
+				p: 1,
+			},
+			{
+				m: { $in: [0, 1, 2] },
+				n: { $in: [0, [1], 2] },
+				o: { $in: [0, { o1: 1 }, 2] },
+				p: { $not: { $in: [{ $lt: 0 }] } },
+			},
+		),
+	},
+
+	{
+		caption: '$contains compare',
+		result: objectMatch(
+			{
+				q: [0, 1, 2],
+				r: [0, { o1: 1 }, 2],
+			},
+			{
+				q: { $not: { $contains: 5 } },
+				r: { $contains: { o1: 1 } },
+			},
+		),
+	},
+
+	{
+		caption: '$subsetOf compare',
+		result: objectMatch(
+			{
+				s: [0, 1, 2],
+			},
+			{
+				s: { $subsetOf: [1, { $lt: 1 }, 2, 3, 'a'] },
+			},
+		),
+	},
+
+	{
+		caption: '$supersetOf compare',
+		result: objectMatch(
+			{
+				t: [0, 1, 2, 3, 'a'],
+			},
+			{
+				t: { $supersetOf: [1, { $lt: 1 }, 2] },
+			},
+		),
+	},
+
+	{
+		caption: '$size compare (array)',
+		result: objectMatch(
+			{
+				u: [0, 1, 2, 3, 'a'],
+				v: [0, 1, 2, 3, 'a'],
+			},
+			{
+				u: { $size: 5 },
+				v: { $size: { $not: { $gt: 6 } } },
+			},
+		),
+	},
+
+	{
+		caption: '$intersection compare',
+		result: objectMatch(
+			{
+				w: [0, 1, 2, 3, 'a'],
+			},
+			{
+				w: { $intersection: [-1, { $lte: 0 }] },
+			},
+		),
+	},
+
+	{
+		caption: '$size compare (object)',
+		result: objectMatch(
+			{
+				x: { x1: 1, x2: 2 },
+			},
+			{
+				x: { $size: 2, x1: 1 },
+			},
+		),
+	},
+
+	{
+		caption: '$and compare',
+		result: objectMatch(
+			{
+				y: 4,
+			},
+			{
+				y: { $and: [{ $gt: 3 }, { $lt: 5 }] },
+			},
+		),
+	},
+
+	{
+		caption: '$or compare',
+		result: objectMatch(
+			{
+				z: 4,
+			},
+			{
+				z: { $or: [{ $gt: 3 }, { $lt: 4 }] },
+			},
+		),
+	},
+	{
+		caption: '$none compare',
+		result: objectMatch(
+			{
+				A: 4,
+			},
+			{
+				A: { $none: [{ $gt: 4 }, { $lt: 4 }] },
+			},
+		),
+	},
+
+	// {
+	// 	caption: '$exists',
+	// 	result: objectMatch(
+	// 		{
+	// 			// a: ['1', '2', 3, 7],
+	// 		},
+	// 		{
+	// 			// a: { $exists: true },
+	// 			b: { $exists: false },
+	// 		},
+	// 	),
+	// },
+
+	{
+		caption: '$odd',
+		result: objectMatch(
+			{
+				Z: ['1', '2', 3, 7],
+			},
+			{
+				Z: { $contains: { $odd: true } },
+			},
+		),
+	},
+
+	{
+		caption: 'Complex compare',
+		result: objectMatch(
+			{
+				a: 5, // Properties compare
 				b: 'X',
-				d: false,
-			},
-		) === true,
-	},
-	/* */
+				c: false,
+				d: ['1', { e1: 'test' }],
 
-	/* * /
-	{
-		caption: 'complex matching types 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-					b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-					c: null,
-					d: {
-						x: { y: 8 },
-					},
-				},
-				{
-					a: 5,
-					b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-					d: {
-						x: { y: 8 },
-					},
-				},
-			), {
-				a: 5,
-				b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-				d: {
-					x: { y: 8 },
-				},
-			},
-		) === true,
-	},
-	/* */
+				e: { e1: 4 }, // $eq/$is compare
+				f: 5,
 
-	/* * /
-	{
-		caption: 'complex matching types 2',
-		result:	objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-					b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-					c: null,
-					d: {
-						x: { y: 8 },
-					},
-				},
-				{
-					a: 5,
-					b: ['a', 2, [1, 2], { xx: 5, yy: 'd' }],
-					d: {
-						x: { y: 8 },
-					},
-				},
-			), {
-				a: 5,
-				b: ['a', 2, [1, 2], { xx: 5, yy: 'd' }],
-				d: {
-					x: { y: 8 },
-				},
-			},
-		) === false,
-	},
-	/* */
+				g: { g1: 4 }, // $neq/$not compare
+				h: 5,
 
-	/* * /
-	{
-		caption: '$eq true',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $eq: 5 },
-				},
-			), {
-				a: { $eq: 5 },
-			},
-		) === true,
-	},
-	/* */
+				i: { i1: 4 }, // $gt/$gte/$lt/$lte compare
+				j: 5,
+				k: 5,
+				l: 5,
 
-	/* * /
-	{
-		caption: '$eq $eq true',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $eq: { $eq: 5 } },
-				},
-			), {
-				a: { $eq: { $eq: 5 } },
-			},
-		) === true,
-	},
+				m: 1, // $in compare
+				n: [1],
+				o: { o1: 1 },
+				p: 1,
 
-	/* * /
-	{
-		caption: '$eq false',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $eq: 5 },
-				},
-			), {
-				a: { $eq: 6 },
-			},
-		) === false,
-	},
-	/* */
+				q: [0, 1, 2], // $contains compare
+				r: [0, { o1: 1 }, 2],
 
-	/* * /
-	{
-		caption: '$not true',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $not: '5' },
-				},
-			), {
-				a: { $not: '5' },
-			},
-		) === true,
-	},
-	/* */
+				s: [0, 1, 2], // $subsetOf compare
 
-	/* * /
-	{
-		caption: '$not $eq true',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $not: { $eq: '5' } },
-				},
-			), {
-				a: { $not: { $eq: '5' } },
-			},
-		) === true,
-	},
-	/* */
+				t: [0, 1, 2, 3, 'a'], // $supersetOf compare
 
-	/* * /
-	{
-		caption: '$not false',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $not: 5 },
-				},
-			), {
-				a: { $not: 5 },
-			},
-		) === false,
-	},
-	/* */
+				u: [0, 1, 2, 3, 'a'], // $size compare (array)
+				v: [0, 1, 2, 3, 'a'],
 
-	/* * /
-	{
-		caption: '$gt 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $gt: 4 },
-				},
-			), {
-				a: { $gt: 4 },
-			},
-		) === true,
-	},
-	/* */
+				w: [0, 1, 2, 3, 'a'], // $intersection compare
 
-	/* * /
-	{
-		caption: '$gt 2',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 'Klučka',
-				},
-				{
-					a: { $gt: 'Broňa' },
-				},
-			), {
-				a: { $gt: 'Broňa' },
-			},
-		) === true,
-	},
-	/* */
+				x: { x1: 1, x2: 2 }, // $size compare (object)
 
-	/* * /
-	{
-		caption: '$gt 3',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $not: { $gt: 5 } },
-				},
-			), {
-				a: { $not: { $gt: 5 } },
-			},
-		) === true,
-	},
-	/* */
+				y: 4, // $and compare
 
-	/* * /
-	{
-		caption: '$gte 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $gte: 5 },
-				},
-			), {
-				a: { $gte: 5 },
-			},
-		) === true,
-	},
-	/* */
+				z: 4, // $or compare
 
-	/* * /
-	{
-		caption: '$gte 2',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 'Klučka',
-				},
-				{
-					a: { $gte: 'Klučka' },
-				},
-			), {
-				a: { $gte: 'Klučka' },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$lt 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-					b: 5,
-				},
-				{
-					a: { $lt: 6 },
-					b: { $not: { $lt: 4 } },
-				},
-			), {
-				a: { $lt: 6 },
-				b: { $not: { $lt: 4 } },
-			},
-		) === true,
-	},
-	/* * /
-
-	/* * /
-	{
-		caption: '$lte 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-					b: 5,
-				},
-				{
-					a: { $lte: 5 },
-					b: { $not: { $lte: 4 } },
-				},
-			), {
-				a: { $lte: 5 },
-				b: { $not: { $lte: 4 } },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$in true 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $in: [1, { $not: 7 }, '6'] },
-				},
-			), {
-				a: { $in: [1, { $not: 7 }, '6'] },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$in false 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-				},
-				{
-					a: { $in: [1, '5', '6'] },
-				},
-			), {
-				a: { $in: [1, '5', '6'] },
-			},
-		) === false,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$size array 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2'],
-				},
-				{
-					a: { $size: 2 },
-				},
-			), {
-				a: { $size: 2 },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$size array 2',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2'],
-				},
-				{
-					a: { $size: 3 },
-				},
-			), {
-				a: { $size: 3 },
-			},
-		) === false,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$size object 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: { c: 1, d: 2, e: 2 },
-				},
-				{
-					a: { $size: 3 },
-				},
-			), {
-				a: { $size: 3 },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$size object 3',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: { b: { c: 1, d: 2, e: 2 } },
-				},
-				{
-					a: { b: { $size: 3 } },
-				},
-			), {
-				a: { b: { $size: 3 } },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$size object 2',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: { b: { c: 1, d: 2, e: 2 } },
-				},
-				{
-					a: { b: { $size: 2 } },
-				},
-			), {
-				a: { b: { $size: 2 } },
-			},
-		) === false,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$size object 3',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: { b: { c: 1, d: 2, e: 2 } },
-				},
-				{
-					a: { b: { $size: { $gte: 2 } } },
-				},
-			), {
-				a: { b: { $size: { $gte: 2 } } },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$size object 4',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: { },
-				},
-				{
-					a: { $size: 0 },
-				},
-			), {
-				a: { $size: 0 },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$intersection array 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 4],
-				},
-				{
-					a: { $intersection: ['1', 3, 8] },
-				},
-			), {
-				a: { $intersection: ['1', 3, 8] },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$intersection array 2',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 4],
-				},
-				{
-					a: { $intersection: [{ $gt: 0 }, '3'] },
-				},
-			), {
-				a: { $intersection: [{ $gt: 0 }, '3'] },
-			},
-		) === false,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$subsetOf 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', 3],
-				},
-				{
-					a: { $subsetOf: ['1', { $gt: 2 }, 8] },
-				},
-			), {
-				a: { $subsetOf: ['1', { $gt: 2 }, 8] },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$subsetOf 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 4],
-				},
-				{
-					a: { $subsetOf: ['1', 3, 8] },
-				},
-			), {
-				a: { $subsetOf: ['1', 3, 8] },
-			},
-		) === false,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$supersetOf 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 8],
-				},
-				{
-					a: { $supersetOf: ['1', 3, 8] },
-				},
-			), {
-				a: { $supersetOf: ['1', 3, 8] },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$and 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 8],
-				},
-				{
-					a: { $and: [{ $supersetOf: ['1', 3, 8] }, { $size: 4 }] },
-				},
-			), {
-				a: { $and: [{ $supersetOf: ['1', 3, 8] }, { $size: 4 }] },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$and 2',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 8],
-				},
-				{
-					a: { $and: [{ $supersetOf: ['1', 3, 8] }, { $size: 3 }] },
-				},
-			), {
-				a: { $and: [{ $supersetOf: ['1', 3, 8] }, { $size: 3 }] },
-			},
-		) === false,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$or 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 8],
-				},
-				{
-					a: { $or: [{ $supersetOf: ['1', 3, 8] }, { $size: 3 }] },
-				},
-			), {
-				a: { $or: [{ $supersetOf: ['1', 3, 8] }, { $size: 3 }] },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$or 2',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 8],
-				},
-				{
-					a: { $or: [{ $supersetOf: ['1', 4, 8] }, { $size: 3 }] },
-				},
-			), {
-				a: { $or: [{ $supersetOf: ['1', 4, 8] }, { $size: 3 }] },
-			},
-		) === false,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$or 3',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 8],
-				},
-				{
-					a: { $not: { $or: [{ $supersetOf: ['1', 4, 8] }, { $size: 3 }] } },
-				},
-			), {
-				a: { $not: { $or: [{ $supersetOf: ['1', 4, 8] }, { $size: 3 }] } },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$none 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 8],
-				},
-				{
-					a: { $none: [{ $supersetOf: ['1', 4, 8] }, { $size: 3 }] },
-				},
-			), {
-				a: { $none: [{ $supersetOf: ['1', 4, 8] }, { $size: 3 }] },
-			},
-		) === true,
-	},
-	/* */
-
-	/* * /
-	{
-		caption: '$none 2',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: ['1', '2', 3, 8],
-				},
-				{
-					a: { $none: [{ $supersetOf: ['1', 4, 8] }, { $size: 4 }] },
-				},
-			), {
-				a: { $none: [{ $supersetOf: ['1', 4, 8] }, { $size: 4 }] },
-			},
-		) === false,
-	},
-	/* */
-	{
-		caption: 'test 1',
-		result: objectCompare(
-			objectIntersection(
-				{
-					id: 5,
-					roles: ['customer-care', 'account-manager'],
-					address: {
-						country: 'cz',
-					},
-				},
-				{
-					roles: { $contains: 'account-manager' },
-					address: {
-						country: { $in: ['cz', 'sk'] },
-					},
-				},
-			), {
-				roles: { $contains: 'account-manager' },
-				address: {
-					country: { $in: ['cz', 'sk'] },
-				},
-			},
-		) === true,
-	},
-
-
-	/* */
-	{
-		caption: 'complex true',
-		result: objectCompare(
-			objectIntersection(
-				{
-					a: 5,
-					b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-					c: 6,
-					d: ['r', 't'],
-					e: { f: ['r', 't'] },
-					g: {},
-
-					h: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-					i: 6,
-					j: ['r', 5],
-					k: { f: ['r', 't', 'x'] },
-					l: [1, 2, 3],
-					m: { m1: '1', m2: '2', m3: '3' },
-
-
-					y: null,
-					z: false,
-				},
-				{
-					a: { $eq: 5 },
-					b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-					c: { $not: false },
-					d: { $in: ['a', ['r', 't'], 6] },
-					e: { f: { $size: 2 } },
-					g: { $size: 0 },
-
-					h: ['a', 2, [1, 2], { $size: 2 }],
-					i: { $not: { $gte: 7 } },
-					j: { $subsetOf: [1, 5, { $lt: 'z' }] },
-					k: { f: { $supersetOf: ['t', { $eq: 'r' }] } },
-					l: { $size: 3, $subsetOf: [0, 1, 2, 3, 4] },
-					m: { m1: '1', $size: { $gte: 3 } },
-
-				},
-			), {
-				a: { $eq: 5 },
-				b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-				c: { $not: false },
-				d: { $in: ['a', ['r', 't'], 6] },
-				e: { f: { $size: 2 } },
-				g: { $size: 0 },
-
-				h: ['a', 2, [1, 2], { $size: 2 }],
-				i: { $not: { $gte: 7 } },
-				j: { $subsetOf: [1, 5, { $lt: 'z' }] },
-				k: { f: { $supersetOf: ['t', { $eq: 'r' }] } },
-				l: { $size: 3, $subsetOf: [0, 1, 2, 3, 4] },
-				m: { m1: '1', $size: { $gte: 3 } },
-
+				A: 4, // $none compare
 
 			},
-		) === true,
-	},
-	/* */
+			{
+				a: 5, // Properties compare
 
+				e: { $eq: { e1: 4 } }, // $eq/$is compare
+				f: { $is: 5 },
+
+				g: { $neq: { g1: 5 } }, // $neq/$not compare
+				h: { $not: 4 },
+
+				i: { i1: { $gt: 3 } }, // $gt/$gte/$lt/$lte compare
+				j: { $gte: 5 },
+				k: { $lt: 6 },
+				l: { $not: { $lte: 4 } },
+
+				m: { $in: [0, 1, 2] }, // $in compare
+				n: { $in: [0, [1], 2] },
+				o: { $in: [0, { o1: 1 }, 2] },
+				p: { $not: { $in: [{ $lt: 0 }] } },
+
+				q: { $not: { $contains: 5 } }, // $contains compare
+				r: { $contains: 2 },
+
+				s: { $subsetOf: [1, { $lt: 1 }, 2, 3, 'a'] }, // $subsetOf compare
+
+				t: { $supersetOf: [1, { $lt: 1 }, 2] }, // $supersetOf compare
+
+				u: { $size: 5 }, // $size compare (array)
+				v: { $size: { $not: { $gt: 6 } } },
+
+				w: { $intersection: [-1, { $lte: 0 }] }, // $intersection compare
+
+				x: { $size: 2, x1: 1 }, // $size compare (object)
+
+				y: { $and: [{ $gt: 3 }, { $lt: 5 }] }, // $and compare
+
+				z: { $or: [{ $gt: 3 }, { $lt: 4 }] }, // $or compare
+
+				A: { $none: [{ $gt: 4 }, { $lt: 4 }] }, // $none compare
+
+			},
+		),
+	},
 
 ] as any[];
 
-/*
-
-
-// debugger;
-console.log(
-	objectCompare(
-		objectIntersection(
-			{
-				a: 5,
-				b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-				c: 6,
-				y: null,
-				z: false,
-			},
-			{
-				a: { $eq: 5 },
-				b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-				c: { $not: false },
-			},
-		), {
-			a: { $eq: 5 },
-			b: ['a', 2, [1, 2], { xx: 5, yy: 'c' }],
-			c: { $not: false },
-		},
-	) === true,
-);
-
-*/
 const ok: any[] = [];
 const nok: any[] = [];
 tests.forEach((test) => {
@@ -895,34 +332,12 @@ tests.forEach((test) => {
 	} else {
 		nok.push(test);
 	}
-	// console.log(`${test.result}: ${test.caption}`);
 });
 
 console.log(`Total tests: ${tests.length}`);
 console.log(`Correct tests: ${ok.length}`);
 console.log(`Incorrect test: ${nok.length}`);
 nok.forEach((test) => {
-	console.log(`\t ${test.caption}`);
+	console.error(`\t ${test.caption}`);
 });
-/*
-const test2 = [
-	{
-		caption: 'One property compare',
-		testObject: {
-			a: 5,
-			b: 'X',
-			c: null,
-			d: false,
-		},
-		pattern: {
-			a: 5,
-		},
-	},
-] as any [];
 
-test2.forEach((test) => {
-	const result = objectIntersection(test.testObject, test.pattern);
-	const cmp = objectCompare(result, test.pattern);
-	console.log(`${cmp} ${test.caption} ${test.pattern}, ${result}`);
-});
-*/

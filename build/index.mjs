@@ -1,5 +1,9 @@
 /**
- * @todo $eq for object = there must be the same keys.... not jut regular pattern matching
+ * @todo add $exists
+ * @todo rewrite objectTemplateIntersection - too complex
+ */
+/**
+ * Dictionary of all templete matching functions
  */
 const patternFunctions = {};
 function supportedType(value) {
@@ -74,6 +78,14 @@ function compareValues(source, target) {
     }
     return result;
 }
+/**
+ * Function matches two objects, if those are the same.
+ * Function does not do pattern matching, but exact comparison
+ *
+ * @param {JSONObject|null} source - object to test
+ * @param {JSONObject|null} target - object to test agains
+ * @returns { boolean } true if value is the same as target
+ */
 function objectCompare(source, target) {
     let result = false;
     if (target === null) {
@@ -139,6 +151,16 @@ function arrayIntersection(value, template) {
         template.every((_, index) => valueIntersection(value[index], template[index]));
     return result ? template : undefined;
 }
+/**
+ * Function provides recursive pattern matching.
+ * If template is scalar, function just compares values
+ * If template is array, function traverse the array and tries to apply all items as patterns to value
+ * If template is object, function traverse the object and tries to apply all properties as patterns to value
+ *
+ * @param {JSONObject} source - object to test
+ * @param {JSONObject} template - pattern to test agains
+ * @returns { boolean } true if value matches template
+ */
 function valueIntersection(value, template) {
     let result;
     // scalar template
@@ -245,7 +267,14 @@ function $supersetOf(value, template) {
     if (!Array.isArray(template) || !Array.isArray(value)) {
         throw new Error(`$in expects array, ${template} , ${value} given`);
     }
-    const found = template.every((_, indexV) => value.find((__, index) => valueIntersection(value[index], template[indexV])));
+    // const found = template.every((_, indexV) => value.find((__, index) => valueIntersection(value[index], template[indexV])));
+    const found = template.every((_, indexV) => {
+        const resultT = value.find((__, index) => {
+            const resultV = valueIntersection(value[index], template[indexV]);
+            return resultV !== undefined;
+        });
+        return resultT !== undefined;
+    });
     return found ? template : undefined;
 }
 function canCompare(value, template) {
@@ -370,6 +399,7 @@ function patternIntersection(key, value, template) {
     return result;
 }
 function objectTemplateIntersection(source, template) {
+    // debugger;
     if ((typeof template !== 'object') ||
         (template === null) ||
         (Array.isArray(template)) ||
@@ -380,7 +410,7 @@ function objectTemplateIntersection(source, template) {
     const templateKeys = Object.keys(template);
     // source && template are objects
     if (isJSONObject(source)) {
-        templateKeys.forEach((key) => {
+        const allMatch = templateKeys.every((key) => {
             if (!supportedType(template[key])) {
                 throw new Error(`Unsupported value (type) in template ${template[key]}`);
             }
@@ -391,29 +421,44 @@ function objectTemplateIntersection(source, template) {
                 const match = valueIntersection(source[key], template[key]);
                 if (match !== undefined) {
                     result[key] = match;
+                    return true;
                 }
             }
             else if (key.startsWith('$')) {
-                let match;
+                // let match;
                 // ugly $size hack?? we must match object size agains whole object
-                if (key === '$size') {
-                    match = patternIntersection(key, source, template[key]);
-                }
-                else {
-                    match = patternIntersection(key, source[key], template[key]);
-                }
+                // if (['$size', '$eq', '$not', '$is', '$neq'].includes(key)) {
+                // 	match = patternIntersection(key, source, template[key]);
+                // } else {
+                // 	match = patternIntersection(key, source[key], template[key]);
+                // }
+                const match = patternIntersection(key, source, template[key]) || patternIntersection(key, source[key], template[key]);
                 if (match !== undefined) {
                     result[key] = match;
+                    return true;
                 }
-            }
+            } /* else {
+                const match = valueIntersection(undefined, template[key]);
+
+                if (match !== undefined) {
+                    result[key] = match;
+                    return true;
+                }
+            } */
+            return false;
         });
+        if (!allMatch) {
+            result = {};
+        }
     }
     else { // source is scalar && template is object - all template keys must be patterns and all must match
         const areMatching = templateKeys.every((key) => {
-            const match = patternIntersection(key, source, template[key]);
-            if (match !== undefined) {
-                result[key] = template[key];
-                return true;
+            if (key.startsWith('$')) {
+                const match = patternIntersection(key, source, template[key]);
+                if (match !== undefined) {
+                    result[key] = template[key];
+                    return true;
+                }
             }
             return false;
         });
@@ -437,8 +482,16 @@ function objectIntersection(source, template) {
     const result = objectTemplateIntersection(source, template);
     return result === undefined ? null : result;
 }
+/**
+ * Main function for object matching
+ *
+ * @param {JSONObject} source - object to test
+ * @param {JSONObject} template - pattern to test agains
+ * @returns { boolean } true if value matches template
+ */
 function objectMatch(source, template) {
+    // debugger;
     return objectIntersection(source, template) !== null;
 }
-export { objectIntersection, objectMatch, objectCompare, patternFunctions, };
+export { objectIntersection, objectMatch, valueIntersection, objectCompare, patternFunctions, };
 //# sourceMappingURL=index.mjs.map

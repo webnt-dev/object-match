@@ -5,7 +5,7 @@
   "main": "build/index.mjs",
   "types": "build/index.d.mts",
   "files": [
-    "src"https://github.com/webnt-dev/object-match
+    "src"
   ],
   "type": "module",
   "scripts": {
