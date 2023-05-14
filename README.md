@@ -369,6 +369,23 @@ import {
   Optional
 } from from '@webnt-dev/object-match';
 
+/**
+ * Function validates, if number id odd
+ *
+ * Function must 2 generic JSON types, any type validation must be done within function.
+ * Function must return `undefined` if matching does not apply or `template` input variable
+ * if it does.
+ *
+ * For example below:
+ * `value` = 4
+ * `template` = false
+ *
+ * @param {JSONData} value - value to test
+ * @param {JSONData} template - template value to test `value` against
+ *
+ * @returns {undefined|JSONData} `undefined` if matching does not apply or `template` input variable if it does
+ *
+ */
 patternFunctions.$odd = (value: JSONData, template: JSONData): Optional<JSONData> => {
   if (typeof template !== 'boolean') {
     throw Error('$odd template must be boolean');
@@ -394,6 +411,10 @@ Package exports `valueIntersection` function that can be used run reccursive mat
 if additional template matching functions needs to traverse complex structures.
 
 # Changelog
+
+Any missing version means mostly documentation fixes.
+
+
 ## version 1.0.4
 2023-05-13
 ```
