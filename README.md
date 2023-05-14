@@ -414,6 +414,11 @@ if additional template matching functions needs to traverse complex structures.
 
 Any missing version means mostly documentation fixes.
 
+## version 1.0.6
+2023-05-14
+```
+@ additions to documentation
+```
 
 ## version 1.0.4
 2023-05-13
