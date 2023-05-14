@@ -1,11 +1,12 @@
 {
   "name": "@webnt-dev/object-match",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Object matching - match object agains template with advanced comparison capability",
   "main": "build/index.mjs",
   "types": "build/index.d.mts",
   "files": [
-    "src"
+    "src",
+    "build"
   ],
   "type": "module",
   "scripts": {
