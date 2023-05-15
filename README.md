@@ -2,7 +2,7 @@ Package allows for complex object matching: checking if you package matches temp
 
 
 Following code tests if provided user (1st parameter) matches template (2nd parameter).
-Tests for user having `account-manager` role and is from Czech Republic or Slovak Republic.
+Test for user having `account-manager` role and is from Czech Republic or Slovak Republic.
 ```TypeScript
 import { objectMatch } from '@webnt-dev/object-match';
 // function objectMatch(source: JSONObject, template: JSONObject): boolean
@@ -25,20 +25,20 @@ objectMatch(
 ) === true;
 ```
 
-Function `objectMatch` traverse object and matches it against template propery by property. If all template conditions match, function returns true.
+Function `objectMatch` traverses the object and matches it against the template property by property. If all template conditions match, function returns true.
 
-Function supports direct matching (`id` in example above) or pattern matching using function - properties strating with `$` in template (`roles` in example above).
+Function supports direct matching (`id` in example above) or pattern matching using function - properties starting with `$` in template (`roles` in example above).
 
 # Included template matching functions
 
 ## Comparison functions
 
-List of predefined comparison function with simple examples.
+List of predefined comparison functions with simple examples.
 
 Comparison functions can be nested, see complex example at the end.
 
 ### `$is` (alias `$eq`)
-function does generic matching (this function can be omited / not used)
+function does generic matching (this function can be omitted / not used)
 
 ### `$not` (alias `$neq`)
 negation of template (see logical functions)
@@ -202,7 +202,7 @@ objectMatch(
 ) === true;
 ```
 
-## Logincal functions
+## Logical functions
 ### `$not`
 negation of template
 ```TypeScript
@@ -370,9 +370,9 @@ import {
 } from from '@webnt-dev/object-match';
 
 /**
- * Function validates, if number id odd
+ * Function validates, if number is odd
  *
- * Function must 2 generic JSON types, any type validation must be done within function.
+ * Function must accept 2 generic JSON types, any type validation must be done within function.
  * Function must return `undefined` if matching does not apply or `template` input variable
  * if it does.
  *
@@ -407,7 +407,7 @@ objectMatch(
 ) === true;
 ```
 
-Package exports `valueIntersection` function that can be used run reccursive matching of 2 values of any types
+Package exports `valueIntersection` function that can be used run recursive matching of 2 values of any types
 if additional template matching functions needs to traverse complex structures.
 
 # Changelog
